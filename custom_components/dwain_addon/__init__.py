@@ -3,9 +3,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from pathlib import Path
 
 from aiohttp import web
-from homeassistant.components.http import HomeAssistantView
+from homeassistant.components import frontend, panel_custom
+from homeassistant.components.http import HomeAssistantView, StaticPathConfig
 from homeassistant.helpers import area_registry, device_registry, entity_registry
 
 from custom_components.dwains_dashboard.configuration_runtime import get_configuration_runtime
@@ -14,6 +16,8 @@ from custom_components.dwains_dashboard.load_dashboard import invalidate_dashboa
 from .layout import LayoutError, LayoutStore
 
 DOMAIN = "dwain_addon"
+PANEL_PATH = "dwain-addon"
+PANEL_URL = "/dwain_addon_assets/manager.js?v=1.0.0"
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -132,15 +136,27 @@ class LayoutView(HomeAssistantView):
 
 async def async_setup(hass, config):
     hass.data.setdefault(DOMAIN, {"enabled": False})
+    await hass.http.async_register_static_paths([
+        StaticPathConfig("/dwain_addon_assets/manager.js", str(Path(__file__).with_name("manager.js")), False),
+    ])
     hass.http.register_view(LayoutView(hass))
     return True
 
 
 async def async_setup_entry(hass, entry):
+    if frontend.async_panel_exists(hass, PANEL_PATH):
+        raise RuntimeError("Dwain-addon panel path already exists")
+    await panel_custom.async_register_panel(
+        hass, PANEL_PATH, "dwain-addon-manager",
+        sidebar_title="Dwain Manager", sidebar_icon="mdi:view-dashboard-edit",
+        module_url=PANEL_URL, require_admin=True,
+    )
     hass.data[DOMAIN]["enabled"] = True
     return True
 
 
 async def async_unload_entry(hass, entry):
     hass.data[DOMAIN]["enabled"] = False
+    if frontend.async_panel_exists(hass, PANEL_PATH):
+        frontend.async_remove_panel(hass, PANEL_PATH)
     return True

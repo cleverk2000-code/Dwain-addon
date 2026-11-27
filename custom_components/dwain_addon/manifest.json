@@ -6,6 +6,8 @@
   "issue_tracker": "https://github.com/cleverk2000-code/Dwain-addon/issues",
   "dependencies": [
     "http",
+    "frontend",
+    "panel_custom",
     "dwains_dashboard"
   ],
   "codeowners": [

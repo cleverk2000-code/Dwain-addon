@@ -7,6 +7,9 @@ HACS Integration companion for [Dwains Lovelace Dashboard 3.0 fork](https://gith
 2. Download the repository (main), restart Home Assistant.
 3. Settings > Devices & services > Add integration > Dwain-addon.
 4. Keep existing Dwains Lovelace installed and enabled.
+5. Open **Dwain Manager** in the HA administrator sidebar. Read current IDs/settings, paste an allowlisted JSON patch, preview and apply. Backup restore and interrupted transaction recovery are in the same panel.
+
+The UI uses the existing HA login; it does not ask for or store a token.
 
 ## API (administrator only)
 Use your existing authenticated HA HTTPS API session. For local development, export HA_URL and HA_TOKEN in your own terminal; never commit or share an admin token. No new public listener, GitHub bridge, AI credential, or anonymous endpoint is installed. ChatGPT connectivity is a separate step.

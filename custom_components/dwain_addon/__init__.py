@@ -1,6 +1,7 @@
 """Dwain-addon: authenticated layout API for the Lovelace fork."""
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from aiohttp import web
@@ -91,7 +92,7 @@ class LayoutView(HomeAssistantView):
         expected = body.get("revision")
         hass = self.hass
         runtime = get_configuration_runtime(hass)
-        try:
+        async def execute():
             async with runtime.mutation_lock:
                 self._authorize(request)
                 if action in ("preview", "apply"):
@@ -105,28 +106,28 @@ class LayoutView(HomeAssistantView):
                     fn, args = self.store.recover, (body.get("backup_id"),)
                 else:
                     return self.json({"error": "Unknown action"}, status_code=400)
-                # Shield executor writes from client disconnect. Retain shared lock until
-                # the disk operation completes even if the request task is cancelled.
-                import asyncio
-                job = asyncio.ensure_future(hass.async_add_executor_job(fn, *args))
-                try:
-                    result = await asyncio.shield(job)
-                except asyncio.CancelledError:
-                    try:
-                        await asyncio.shield(job)
-                    finally:
-                        if action in ("apply", "restore", "recover"):
-                            _refresh(hass, runtime)
-                    raise
+                result = await hass.async_add_executor_job(fn, *args)
                 if result.get("changed") or result.get("recovered"):
                     _refresh(hass, runtime)
-            return self.json(result)
-        except LayoutError as exc:
-            return self.json({"error": str(exc)}, status_code=409)
-        except Exception:
-            _LOGGER.exception("Dwains layout operation failed")
-            return self.json({"error": "Operation failed; read layout and pending status before retrying"},
-                             status_code=500)
+                return self.json(result)
+
+        # An independently owned task retains the shared mutation lock even if
+        # the requesting client disconnects or repeatedly cancels its request.
+        async def guarded():
+            try:
+                return await execute()
+            except LayoutError as exc:
+                return self.json({"error": str(exc)}, status_code=409)
+            except web.HTTPException:
+                raise
+            except Exception:
+                _LOGGER.exception("Dwains layout operation failed")
+                return self.json({"error": "Operation failed; read layout and pending status before retrying"},
+                                 status_code=500)
+
+        job = hass.async_create_task(guarded())
+        return await asyncio.shield(job)
+
 
 
 async def async_setup(hass, config):

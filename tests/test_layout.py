@@ -89,6 +89,14 @@ class TransactionTests(unittest.TestCase):
             with self.subTest(raw=raw), self.assertRaises(layout.LayoutError):
                 self.store.snapshot()
 
+    def test_yaml_alias_does_not_mutate_unrelated_entity(self):
+        self.entity.write_text("light.test: &base {hidden: true}\nsensor.battery: *base\n")
+        rev = self.store.snapshot()["revision"]
+        self.store.apply({"entities": {"light.test": {"hidden": False}}}, rev, self.allowed)
+        settings = self.store.snapshot()["configuration"]["entities"]
+        self.assertFalse(settings["light.test"]["hidden"])
+        self.assertTrue(settings["sensor.battery"]["hidden"])
+
     def test_missing_file_roundtrip(self):
         self.entity.unlink()
         rev = self.store.snapshot()["revision"]

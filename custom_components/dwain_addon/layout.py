@@ -54,8 +54,7 @@ def _parse(raw):
         ):
             raise LayoutError("Expected a mapping of IDs to settings")
         # Reject non-JSON types, circular aliases, and non-finite numbers.
-        json.dumps(value, allow_nan=False)
-        return value
+        return json.loads(json.dumps(value, allow_nan=False))
     except (yaml.YAMLError, TypeError, ValueError, RecursionError) as exc:
         raise LayoutError("Unsupported or malformed Dwains YAML") from exc
 

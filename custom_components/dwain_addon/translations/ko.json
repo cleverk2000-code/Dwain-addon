@@ -1,0 +1,7 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "이미 설정되어 있습니다."
+    }
+  }
+}

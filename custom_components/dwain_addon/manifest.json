@@ -1,0 +1,17 @@
+{
+  "domain": "dwain_addon",
+  "name": "Dwain-addon",
+  "version": "1.0.0",
+  "documentation": "https://github.com/cleverk2000-code/Dwain-addon",
+  "issue_tracker": "https://github.com/cleverk2000-code/Dwain-addon/issues",
+  "dependencies": [
+    "http",
+    "dwains_dashboard"
+  ],
+  "codeowners": [
+    "@cleverk2000-code"
+  ],
+  "config_flow": true,
+  "iot_class": "local_push",
+  "integration_type": "service"
+}
